@@ -1,30 +1,37 @@
-const path = require('path')
-const http = require('http')
-const express = require('express')
-const socketio = require('socket.io')
+const path = require("path");
+const http = require("http");
+const express = require("express");
+const socketio = require("socket.io");
 
-const app = express()
-const server = http.createServer(app)
-const io = socketio(server)
+const app = express();
+const server = http.createServer(app);
+const io = socketio(server);
 
-const port = process.env.PORT || 3000
-const publicDirectoryPath = path.join(__dirname, '../public')
+const port = process.env.PORT || 3000;
+const publicDirectoryPath = path.join(__dirname, "../public");
 
-app.use(express.static(publicDirectoryPath))
+app.use(express.static(publicDirectoryPath));
 
-let count = 0
+io.on("connection", socket => {
+  console.log("New WebSocket connection");
 
-io.on('connection', (socket) => {
-    console.log('New WebSocket connection')
+  //emit to recently connected client
+  socket.emit("message", "Welcome");
 
-    socket.emit('countUpdated', count)
+  //emit event to all connected client other than recently connected client
+  socket.broadcast.emit("message", "A new user joined");
 
-    socket.on('increment', () => {
-        count++
-        io.emit('countUpdated', count)
-    })
-})
+  socket.on("sendMessage", message => {
+    //emit to all connected clients
+    io.emit("message", message);
+  });
+
+  //Alert: disconnect has not be emitted from client end by writing code.it is automatically emitted when the client closes
+  socket.on("disconnect", () => {
+    io.emit("message", "user has left");
+  });
+});
 
 server.listen(port, () => {
-    console.log(`Server is up on port ${port}!`)
-})
+  console.log(`Server is up on port ${port}!`);
+});
