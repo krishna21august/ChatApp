@@ -2,6 +2,7 @@ const path = require("path");
 const http = require("http");
 const express = require("express");
 const socketio = require("socket.io");
+const { generateMessage } = require("./utils/messages");
 
 const app = express();
 const server = http.createServer(app);
@@ -17,10 +18,10 @@ io.on("connection", socket => {
   console.log("New WebSocket connection");
 
   //emit to recently connected client
-  socket.emit("message", "Welcome");
+  socket.emit("message", generateMessage("Welcome"));
 
   //emit event to all connected client other than recently connected client
-  socket.broadcast.emit("message", "A new user joined");
+  socket.broadcast.emit("message", generateMessage("A new user joined"));
 
   socket.on("sendMessage", (message, callback) => {
     const filter = new Filter();
@@ -29,7 +30,7 @@ io.on("connection", socket => {
       return callback("Profanity is not allowed");
     }
     //emit to all connected clients
-    io.emit("message", message);
+    io.emit("message", generateMessage(message));
 
     //ensures the client sending mesage has delivered the message
     callback("delivered");
@@ -37,7 +38,7 @@ io.on("connection", socket => {
 
   //Alert: disconnect has not be emitted from client end by writing code.it is automatically emitted when the client closes
   socket.on("disconnect", () => {
-    io.emit("message", "user has left");
+    io.emit("message", generateMessage("user has left"));
   });
 
   //send location to all the clients
