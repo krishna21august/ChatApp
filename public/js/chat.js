@@ -9,6 +9,9 @@ const $messages = document.querySelector("#messages");
 
 // Templates
 const messageTemplate = document.querySelector("#message-template").innerHTML;
+const locationMessageTemplate = document.querySelector(
+  "#location-message-template"
+).innerHTML;
 
 socket.on("message", message => {
   console.log(message);
@@ -18,8 +21,12 @@ socket.on("message", message => {
   $messages.insertAdjacentHTML("beforeend", html);
 });
 
-socket.on("locationMessage", message => {
-  console.log(message);
+//listen to share location event emitted by server
+socket.on("locationMessage", url => {
+  const html = Mustache.render(locationMessageTemplate, {
+    url
+  });
+  $messages.insertAdjacentHTML("beforeend", html);
 });
 
 $messageForm.addEventListener("submit", e => {
@@ -42,6 +49,7 @@ $messageForm.addEventListener("submit", e => {
   });
 });
 
+//emit share location event on click of button
 $sendLocationButton.addEventListener("click", () => {
   if (!navigator.geolocation) {
     return alert("Geolocation is not supported by your browser.");
@@ -49,6 +57,7 @@ $sendLocationButton.addEventListener("click", () => {
 
   $sendLocationButton.setAttribute("disabled", "disabled");
 
+  //use geolocation api to send cooordinates
   navigator.geolocation.getCurrentPosition(position => {
     socket.emit(
       "sendLocation",
