@@ -2,6 +2,7 @@ const path = require("path");
 const http = require("http");
 const express = require("express");
 const socketio = require("socket.io");
+const Filter = require("bad-words");
 const {
   generateMessage,
   generateLocationMessage
@@ -10,7 +11,6 @@ const {
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
-const Filter = require("bad-words");
 
 const port = process.env.PORT || 3000;
 const publicDirectoryPath = path.join(__dirname, "../public");
@@ -20,31 +20,29 @@ app.use(express.static(publicDirectoryPath));
 io.on("connection", socket => {
   console.log("New WebSocket connection");
 
-  //emit to recently connected client
-  socket.emit("message", generateMessage("Welcome"));
+  socket.on("join", ({ username, room }) => {
+    socket.join(room);
 
-  //emit event to all connected client other than recently connected client
-  socket.broadcast.emit("message", generateMessage("A new user joined"));
+    socket.emit("message", generateMessage("Welcome!"));
+    socket.broadcast
+      .to(room)
+      .emit("message", generateMessage(`${username} has joined!`));
+
+    // socket.emit, io.emit, socket.broadcast.emit
+    // io.to.emit, socket.broadcast.to.emit
+  });
 
   socket.on("sendMessage", (message, callback) => {
     const filter = new Filter();
 
     if (filter.isProfane(message)) {
-      return callback("Profanity is not allowed");
+      return callback("Profanity is not allowed!");
     }
-    //emit to all connected clients
-    io.emit("message", generateMessage(message));
 
-    //ensures the client sending mesage has delivered the message
-    callback("delivered");
+    io.to("Center City").emit("message", generateMessage(message));
+    callback();
   });
 
-  //Alert: disconnect has not be emitted from client end by writing code.it is automatically emitted when the client closes
-  socket.on("disconnect", () => {
-    io.emit("message", generateMessage("user has left"));
-  });
-
-  //send location to all the clients
   socket.on("sendLocation", (coords, callback) => {
     io.emit(
       "locationMessage",
@@ -53,6 +51,10 @@ io.on("connection", socket => {
       )
     );
     callback();
+  });
+
+  socket.on("disconnect", () => {
+    io.emit("message", generateMessage("A user has left!"));
   });
 });
 
