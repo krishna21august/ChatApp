@@ -23,6 +23,7 @@ const publicDirectoryPath = path.join(__dirname, "../public");
 
 app.use(express.static(publicDirectoryPath));
 
+//connection event is automaticaaly triggered as soon as client is connected
 io.on("connection", socket => {
   console.log("New WebSocket connection");
 
@@ -35,13 +36,17 @@ io.on("connection", socket => {
 
     socket.join(user.room);
 
+    //emit event to recently connected user
     socket.emit("message", generateMessage("Admin", "Welcome!"));
+
+    //emit event to all the users in chat room sending the message to all users in a chat room(other than user sending it)
     socket.broadcast
       .to(user.room)
       .emit(
         "message",
         generateMessage("Admin", `${user.username} has joined!`)
       );
+    //emit event for all the users in a chat room
     io.to(user.room).emit("roomData", {
       room: user.room,
       users: getUsersInRoom(user.room)
@@ -58,9 +63,11 @@ io.on("connection", socket => {
       return callback("Profanity is not allowed!");
     }
 
+    //send message to all users in chatroom
     io.to(user.room).emit("message", generateMessage(user.username, message));
     callback();
   });
+
   //send location
   socket.on("sendLocation", (coords, callback) => {
     const user = getUser(socket.id);
