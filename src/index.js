@@ -81,6 +81,7 @@ io.on("connection", socket => {
     callback();
   });
 
+//disconnect triggered as soon as client disconnect
   socket.on("disconnect", () => {
     const user = removeUser(socket.id);
 
